@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Finanzas Personales 50/30/20</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f5f7fa;
+  margin: 0;
+  padding: 20px;
+}
+
+.container {
+  max-width: 700px;
+  background: #fff;
+  margin: auto;
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+h1 {
+  text-align: center;
+}
+
+.section {
+  margin-top: 30px;
+}
+
+.section h2 {
+  border-bottom: 2px solid #eee;
+  padding-bottom: 5px;
+}
+
+.input-group {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+input {
+  width: 120px;
+  padding: 5px;
+}
+
+.total {
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+.progress {
+  height: 10px;
+  background: #eee;
+  border-radius: 5px;
+  overflow: hidden;
+  margin-top: 5px;
+}
+
+.bar {
+  height: 100%;
+  width: 0%;
+  transition: 0.3s;
+}
+
+.green { background: #4caf50; }
+.yellow { background: #ffc107; }
+.red { background: #f44336; }
+
+.note {
+  font-size: 14px;
+  margin-top: 5px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h1>Finanzas Personales</h1>
+
+<div class="section">
+    <select id="period" onchange="calculate()">
+  <option value="monthly">Mensual</option>
+  <option value="biweekly">Quincenal</option>
+  <option value="weekly">Semanal</option>
+</select>
+  <h2>Ingreso</h2>
+  <input type="number" id="income" placeholder="Ej. 20000" oninput="calculate()">
+</div>
+
+<div class="section">
+  <h2>Gastos necesarios (50%)</h2>
+  <button onclick="addExpense('need')">+ Agregar gasto</button>
+  <div id="need-list"></div>
+  <div class="input-group">Renta <input type="number" class="need" oninput="calculate()"></div>
+  <div class="input-group">Servicios <input type="number" class="need" oninput="calculate()"></div>
+  <div class="input-group">Despensa <input type="number" class="need" oninput="calculate()"></div>
+  <div class="input-group">Deudas <input type="number" class="need" oninput="calculate()"></div>
+
+  <div class="total">Total: $<span id="totalNeed">0</span></div>
+  <div class="progress"><div id="barNeed" class="bar green"></div></div>
+  <div class="note" id="noteNeed"></div>
+</div>
+
+<div class="section">
+  <h2>Gastos personales (30%)</h2>
+  <button onclick="addExpense('want')">+ Agregar gasto</button>
+  <div id="want-list"></div>
+  <div class="input-group">Ocio <input type="number" class="want" oninput="calculate()"></div>
+  <div class="input-group">Comidas fuera <input type="number" class="want" oninput="calculate()"></div>
+  <div class="input-group">Suscripciones <input type="number" class="want" oninput="calculate()"></div>
+
+  <div class="total">Total: $<span id="totalWant">0</span></div>
+  <div class="progress"><div id="barWant" class="bar green"></div></div>
+  <div class="note" id="noteWant"></div>
+</div>
+
+<div class="section">
+  <h2>Ahorros e inversiones (20%)</h2>
+  <div class="total">Objetivo: $<span id="saveGoal">0</span></div>
+  <div class="note">Si mantienes esto, en 1 año tendrás un buen colchón financiero.</div>
+</div>
+
+</div>
+
+<script>
+function sum(className) {
+  let total = 0;
+  document.querySelectorAll(className).forEach(i => {
+    total += Number(i.value) || 0;
+  });
+  return total;
+}
+
+function updateBar(bar, percent) {
+  bar.style.width = Math.min(percent, 100) + "%";
+  bar.className = "bar " + (percent <= 100 ? (percent < 80 ? "green" : "yellow") : "red");
+}
+
+function calculate() {
+  let income = Number(document.getElementById("income").value) || 0;
+
+  let needLimit = income * 0.5;
+  let wantLimit = income * 0.3;
+  let saveLimit = income * 0.2;
+
+  let totalNeed = sum(".need");
+  let totalWant = sum(".want");
+
+  document.getElementById("totalNeed").textContent = totalNeed;
+  document.getElementById("totalWant").textContent = totalWant;
+  document.getElementById("saveGoal").textContent = saveLimit;
+
+  updateBar(document.getElementById("barNeed"), (totalNeed / needLimit) * 100);
+  updateBar(document.getElementById("barWant"), (totalWant / wantLimit) * 100);
+
+  document.getElementById("noteNeed").textContent =
+    totalNeed > needLimit ? "Estás excediendo el 50%" : "Vas bien en esta categoría";
+
+  document.getElementById("noteWant").textContent =
+    totalWant > wantLimit ? "Aquí puedes hacer ajustes" : "Gasto personal controlado";
+}
+function addExpense(type) {
+  const container = document.getElementById(type + "-list");
+
+  const row = document.createElement("div");
+  row.className = "input-group";
+
+  row.innerHTML = `
+    <input type="text" placeholder="Concepto">
+    <input type="number" class="${type}" oninput="calculate()" placeholder="Monto">
+  `;
+
+  container.appendChild(row);
+}
+</script>
+
+</body>
+</html>
