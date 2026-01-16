@@ -42,12 +42,12 @@ h1 {
 }
 
 input, select {
-  padding: 10px;
-  font-size: 16px;
+  padding: 6px 8px;
+  font-size: 14px;
 }
 
 input[type="number"] {
-  width: 140px;
+  width: 90px;
 }
 
 button {
@@ -123,9 +123,7 @@ button {
 
   <p>🔒 Tus datos no se guardan ni se envían</p>
 
-  <button id="startBtn" class="primary">
-  Siguiente ➡️
-</button>
+  <button class="primary" onclick="startApp()">Siguiente ➡️</button>
 
   <p style="margin-top:40px;font-size:12px;">
     Herramienta educativa. No es asesoría financiera.
@@ -166,9 +164,9 @@ button {
   <div id="want-list"></div>
   <button class="secondary" onclick="addExpense('want')">+ Agregar gasto</button>
 
-  <div class="total">Total: $<span id="totalNeed">0</span></div>
-  <div class="progress"><div id="barNeed" class="bar green"></div></div>
-  <div class="note" id="noteNeed"></div>
+  <div class="total">Total: $<span id="totalWant">0</span></div>
+  <div class="progress"><div id="barWant" class="bar green"></div></div>
+  <div class="note" id="noteWant"></div>
 </div>
 
 <div class="section">
@@ -177,121 +175,104 @@ button {
   <div class="note">Si mantienes esto, en 1 año tendrás un buen colchón financiero.</div>
 </div>
 
+<div class="center" style="margin-top:30px;">
+  <button class="secondary" onclick="resetData()">Limpiar datos</button>
+</div>
+ <div class="note">by.JoseL.zcorpion</div>
+
+</div>
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
+function startApp() {
+  document.getElementById("intro").style.display = "none";
+  document.getElementById("app").style.display = "block";
+}
 
-  const intro = document.getElementById("intro");
-  const app = document.getElementById("app");
-  const startBtn = document.getElementById("startBtn");
+function addExpense(type) {
+  const div = document.createElement("div");
+  div.className = "input-group";
+  div.innerHTML = `
+    <input type="text" placeholder="Concepto">
+    <input type="number" class="${type}" placeholder="Monto" oninput="calculate()">
+  `;
+  document.getElementById(type + "-list").appendChild(div);
+}
 
-  // Cambiar de vista
-  if (startBtn) {
-    startBtn.addEventListener("click", () => {
-      intro.style.display = "none";
-      app.style.display = "block";
-      localStorage.setItem("started", "true");
-    });
-  }
+function sum(cls) {
+  let t = 0;
+  document.querySelectorAll("." + cls).forEach(i => t += Number(i.value) || 0);
+  return t;
+}
 
-  // Funciones
-  window.addExpense = function(type) {
-    const div = document.createElement("div");
-    div.className = "input-group";
-    div.innerHTML = `
-      <input type="text" placeholder="Concepto">
-      <input type="number" class="${type}" placeholder="Monto">
-    `;
-    div.querySelector("input[type='number']")
-       .addEventListener("input", calculate);
+function updateBar(bar, percent) {
+  bar.style.width = Math.min(percent,100) + "%";
+  bar.className = "bar " + (percent < 80 ? "green" : percent <= 100 ? "yellow" : "red");
+}
 
-    document.getElementById(type + "-list").appendChild(div);
-  };
+function calculate() {
+  let raw = Number(income.value) || 0;
+  let period = document.getElementById("period").value;
 
-  function sum(cls) {
-    let total = 0;
-    document.querySelectorAll("." + cls).forEach(i => {
-      total += Number(i.value) || 0;
-    });
-    return total;
-  }
+  let incomeMonthly = raw;
+  if (period === "weekly") incomeMonthly = raw * 1;
+  if (period === "biweekly") incomeMonthly = raw * 1;
 
-  function updateBar(bar, percent) {
-    bar.style.width = Math.min(percent, 100) + "%";
-    bar.className = "bar " + (percent < 80 ? "green" : percent <= 100 ? "yellow" : "red");
-  }
+  let needLimit = incomeMonthly * 0.5;
+  let wantLimit = incomeMonthly * 0.3;
 
-  window.calculate = function() {
-    const incomeInput = document.getElementById("income");
-    const period = document.getElementById("period").value;
+  let needTotal = sum("need");
+  let wantTotal = sum("want");
 
-    let raw = Number(incomeInput.value) || 0;
-    let monthly = raw;
+  totalNeed.textContent = needTotal;
+  totalWant.textContent = wantTotal;
+  saveGoal.textContent = Math.round(incomeMonthly * 0.2);
 
-    if (period === "weekly") monthly = raw * 4;
-    if (period === "biweekly") monthly = raw * 2;
+  updateBar(barNeed, (needTotal / needLimit) * 100);
+  updateBar(barWant, (wantTotal / wantLimit) * 100);
 
-    const needLimit = monthly * 0.5;
-    const wantLimit = monthly * 0.3;
+  noteNeed.textContent = needTotal > needLimit ? "Estás excediendo el 50%" : "Vas bien";
+  noteWant.textContent = wantTotal > wantLimit ? "Aquí puedes ajustar" : "Controlado";
 
-    const needTotal = sum("need");
-    const wantTotal = sum("want");
+  saveData();
+}
 
-    document.getElementById("totalNeed").textContent = needTotal;
-    document.getElementById("totalWant").textContent = wantTotal;
-    document.getElementById("saveGoal").textContent = Math.round(monthly * 0.2);
+function saveData() {
+  localStorage.setItem("finanzasData", JSON.stringify({
+    income: income.value,
+    period: period.value,
+    needs: [...document.querySelectorAll(".need")].map(i => i.value),
+    wants: [...document.querySelectorAll(".want")].map(i => i.value)
+  }));
+}
 
-    updateBar(document.getElementById("barNeed"), (needTotal / needLimit) * 100);
-    updateBar(document.getElementById("barWant"), (wantTotal / wantLimit) * 100);
+function resetData() {
+  localStorage.removeItem("finanzasData");
+  location.reload();
+}
 
-    document.getElementById("noteNeed").textContent =
-      needTotal > needLimit ? "Estás excediendo el 50%" : "Vas bien";
+window.onload = () => {
+  const saved = localStorage.getItem("finanzasData");
+  if (!saved) return;
 
-    document.getElementById("noteWant").textContent =
-      wantTotal > wantLimit ? "Aquí puedes ajustar" : "Controlado";
+  const d = JSON.parse(saved);
+  income.value = d.income;
+  period.value = d.period;
 
-    saveData();
-  };
+  d.needs.forEach(v => {
+    addExpense("need");
+    document.querySelectorAll(".need").at(-1).value = v;
+  });
 
-  function saveData() {
-    const data = {
-      income: document.getElementById("income").value,
-      period: document.getElementById("period").value,
-      needs: [...document.querySelectorAll(".need")].map(i => i.value),
-      wants: [...document.querySelectorAll(".want")].map(i => i.value)
-    };
-    localStorage.setItem("finanzasData", JSON.stringify(data));
-  }
+  d.wants.forEach(v => {
+    addExpense("want");
+    document.querySelectorAll(".want").at(-1).value = v;
+  });
 
-  function loadData() {
-    const saved = localStorage.getItem("finanzasData");
-    if (!saved) return;
-
-    const data = JSON.parse(saved);
-
-    document.getElementById("income").value = data.income;
-    document.getElementById("period").value = data.period;
-
-    data.needs.forEach(v => {
-      addExpense("need");
-      document.querySelectorAll(".need").at(-1).value = v;
-    });
-
-    data.wants.forEach(v => {
-      addExpense("want");
-      document.querySelectorAll(".want").at(-1).value = v;
-    });
-
-    intro.style.display = "none";
-    app.style.display = "block";
-    calculate();
-  }
-
-  loadData();
-});
+  startApp();
+  calculate();
+};
 </script>
 
 </body>
-</html> 
-
+</html>
