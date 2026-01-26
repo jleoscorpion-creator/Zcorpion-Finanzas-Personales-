@@ -147,7 +147,10 @@
 
     <button onclick="resetApp()" style="margin-top:12px;background:#ef4444;">
       Reiniciar
-    </button>
+    </button> 
+    <button id="installBtn" onclick="installApp()" style="display:none;">
+  Instalar app
+</button>
 
   </div>
 </div>
@@ -205,7 +208,7 @@ function calculate() {
   document.getElementById("monthlyIncome").textContent = Math.round(monthly);
   document.getElementById("saveGoal").textContent = Math.round(monthly * 0.2);
 
-  const needTotal = state.needs.reduce((a,b)=>a+b,0);
+  const needTotal = state.needs.reduce((a,b)=>a+b.amount,0);
   const wantTotal = state.wants.reduce((a,b)=>a+b,0);
   const weeklySaving = (monthly * 0.2) / 4;
 document.getElementById("saveGoalWeekly").textContent = Math.round(weeklySaving);
@@ -239,24 +242,34 @@ function renderAdvice(monthly, needs, wants) {
 }
 
 /* ------------- EXPENSES --------------- */
-function addExpense(type) {
+function addExpense(type, data = { name: "", amount: 0 }) {
   const list = document.getElementById(type + "-list");
   const row = document.createElement("div");
   row.className = "input-row";
+
   row.innerHTML = `
-    <input type="text" placeholder="Concepto">
-    <input type="number" placeholder="Monto">
+    <input type="text" placeholder="Concepto" value="${data.name}">
+    <input type="number" placeholder="Monto" value="${data.amount}">
   `;
 
-  row.querySelector("input[type='number']").oninput = () => {
-    const values = [...list.querySelectorAll("input[type='number']")]
-      .map(i => Number(i.value) || 0);
-    state[type + "s"] = values;
+  const nameInput = row.children[0];
+  const amountInput = row.children[1];
+
+  function updateState() {
+    const items = [...list.children].map(r => ({
+      name: r.children[0].value,
+      amount: Number(r.children[1].value) || 0
+    }));
+    state[type + "s"] = items;
     calculate();
-  };
+  }
+
+  nameInput.oninput = updateState;
+  amountInput.oninput = updateState;
 
   list.appendChild(row);
 }
+  
 
 /* ------------- RESET ------------------ */
 function resetApp() {
@@ -266,6 +279,8 @@ function resetApp() {
 
 /* ------------- INIT ------------------- */
 loadState();
+state.needs.forEach(item => addExpense("need", item));
+state.wants.forEach(item => addExpense("want", item));
 document.getElementById("income").value = state.income;
 document.getElementById("period").value = state.period;
 
@@ -288,6 +303,20 @@ if ("serviceWorker" in navigator) {
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./service-worker.js");
+  });
+}
+let deferredPrompt;
+
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById("installBtn").style.display = "block";
+});
+
+function installApp() {
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(() => {
+    deferredPrompt = null;
   });
 }
 </script>
