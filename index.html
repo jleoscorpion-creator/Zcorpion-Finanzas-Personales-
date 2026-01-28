@@ -208,8 +208,8 @@ function calculate() {
   document.getElementById("monthlyIncome").textContent = Math.round(monthly);
   document.getElementById("saveGoal").textContent = Math.round(monthly * 0.2);
 
-  const needTotal = state.needs.reduce((a,b)=>a+b,0);
-  const wantTotal = state.wants.reduce((a,b)=>a+b,0);
+  const needTotal = state.needs.reduce((a,b)=>a+b,.amount 0);
+  const wantTotal = state.wants.reduce((a,b)=>a+b,.amount 0);
   const weeklySaving = (monthly * 0.2) / 4;
 document.getElementById("saveGoalWeekly").textContent = Math.round(weeklySaving);
 
